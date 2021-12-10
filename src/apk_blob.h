@@ -131,4 +131,8 @@ int apk_blob_pull_blob_match(apk_blob_t *b, apk_blob_t match);
 extern size_t strlcpy(char *dest, const char *src, size_t size);
 #endif
 
+#if defined(__APPLE__)
+extern void *memrchr(const void *m, int c, size_t n);
+#endif
+
 #endif

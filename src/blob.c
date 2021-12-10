@@ -156,6 +156,16 @@ int apk_blob_cspn(apk_blob_t blob, const apk_spn_match reject, apk_blob_t *l, ap
 }
 #endif
 
+#if defined(__APPLE__)
+void *memrchr(const void *m, int c, size_t n)
+{
+	const unsigned char *s = m;
+	c = (unsigned char)c;
+	while (n--) if (s[n]==c) return (void *)(s+n);
+	return 0;
+}
+#endif
+
 int apk_blob_rsplit(apk_blob_t blob, char split, apk_blob_t *l, apk_blob_t *r)
 {
 	char *sep;
