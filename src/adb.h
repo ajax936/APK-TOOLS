@@ -1,11 +1,11 @@
 #ifndef ADB_H
 #define ADB_H
 
-#include <endian.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include "apk_io.h"
 #include "apk_trust.h"
+#include "apk_endian.h"
 
 struct adb;
 struct adb_obj;

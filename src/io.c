@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <endian.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <stdint.h>
@@ -24,6 +23,7 @@
 #include "apk_defines.h"
 #include "apk_io.h"
 #include "apk_crypto.h"
+#include "apk_endian.h"
 
 #if defined(__GLIBC__) || defined(__UCLIBC__)
 #define HAVE_FGETPWENT_R

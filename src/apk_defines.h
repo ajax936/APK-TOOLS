@@ -10,11 +10,12 @@
 #ifndef APK_DEFINES_H
 #define APK_DEFINES_H
 
-#include <endian.h>
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+
+#include "apk_endian.h"
 
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 #define BIT(x)		(1 << (x))
