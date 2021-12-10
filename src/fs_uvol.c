@@ -15,6 +15,11 @@
 #include "apk_context.h"
 #include "apk_fs.h"
 
+#ifdef __APPLE__
+# include <crt_externs.h>
+# define environ (*_NSGetEnviron())
+#endif
+
 static int uvol_run(struct apk_ctx *ac, char *action, const char *volname, char *arg1, char *arg2)
 {
 	struct apk_out *out = &ac->out;
@@ -49,7 +54,13 @@ static int uvol_extract(struct apk_ctx *ac, const char *volname, char *arg1, off
 	char *argv[] = { (char*)apk_ctx_get_uvol(ac), "write", (char*) volname, arg1, 0 };
 	posix_spawn_file_actions_t act;
 
+#ifdef __linux__
 	if (pipe2(pipefds, O_CLOEXEC) != 0) return -errno;
+#else
+	if (pipe(pipefds) != 0) return -errno;
+	fcntl(pipefds[0], F_SETFL, O_CLOEXEC);
+	fcntl(pipefds[1], F_SETFL, O_CLOEXEC);
+#endif
 
 	posix_spawn_file_actions_init(&act);
 	posix_spawn_file_actions_adddup2(&act, pipefds[0], STDIN_FILENO);

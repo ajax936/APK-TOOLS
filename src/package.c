@@ -17,7 +17,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <sys/sysmacros.h>
+#ifdef __linux__
+# include <sys/sysmacros.h>
+#endif
 
 #include "apk_openssl.h"
 #include <openssl/pem.h>
@@ -784,11 +786,13 @@ void apk_ipkg_run_script(struct apk_installed_package *ipkg,
 			mkdirat(db->root_fd, "tmp", 01777);
 		if (faccessat(db->root_fd, "dev", F_OK, 0) != 0) {
 			mkdirat(db->root_fd, "dev", 0755);
+#ifdef __linux__
 			mknodat(db->root_fd, "dev/null", S_IFCHR | 0666, makedev(1, 3));
 			mknodat(db->root_fd, "dev/zero", S_IFCHR | 0666, makedev(1, 5));
 			mknodat(db->root_fd, "dev/random", S_IFCHR | 0666, makedev(1, 8));
 			mknodat(db->root_fd, "dev/urandom", S_IFCHR | 0666, makedev(1, 9));
 			mknodat(db->root_fd, "dev/console", S_IFCHR | 0600, makedev(5, 1));
+#endif
 		}
 		if (faccessat(db->root_fd, "var/cache/misc", F_OK, 0) != 0) {
 			mkdirat(root_fd, "var", 0755);

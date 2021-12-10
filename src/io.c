@@ -751,7 +751,11 @@ void apk_fileinfo_hash_xattr(struct apk_file_info *fi, uint8_t alg)
 int apk_fileinfo_get(int atfd, const char *filename, unsigned int flags,
 		     struct apk_file_info *fi, struct apk_atom_pool *atoms)
 {
+#ifdef __linux__
 	struct stat64 st;
+#else
+	struct stat st;
+#endif
 	unsigned int hash_alg = flags & 0xff;
 	unsigned int xattr_hash_alg = (flags >> 8) & 0xff;
 	int atflags = 0;
@@ -762,8 +766,13 @@ int apk_fileinfo_get(int atfd, const char *filename, unsigned int flags,
 	if (flags & APK_FI_NOFOLLOW)
 		atflags |= AT_SYMLINK_NOFOLLOW;
 
+#ifdef __linux__
 	if (fstatat64(atfd, filename, &st, atflags) != 0)
 		return -errno;
+#else
+	if (fstatat(atfd, filename, &st, atflags) != 0)
+		return -errno;
+#endif
 
 	*fi = (struct apk_file_info) {
 		.size = st.st_size,
@@ -775,13 +784,16 @@ int apk_fileinfo_get(int atfd, const char *filename, unsigned int flags,
 	};
 
 	if (xattr_hash_alg != APK_DIGEST_NONE) {
+#ifdef __linux__
 		ssize_t len, vlen;
-		int fd, i, r;
 		char val[1024], buf[1024];
+#endif
+		int fd, i, r;
 
-		r = 0;
+		i = r = 0;
 		fd = openat(atfd, filename, O_RDONLY);
 		if (fd >= 0) {
+#ifdef __linux__
 			len = flistxattr(fd, buf, sizeof(buf));
 			if (len > 0) {
 				struct apk_xattr_array *xattrs = NULL;
@@ -801,6 +813,7 @@ int apk_fileinfo_get(int atfd, const char *filename, unsigned int flags,
 				apk_fileinfo_hash_xattr_array(xattrs, xattr_hash_alg, &fi->xattr_digest);
 				apk_xattr_array_free(&xattrs);
 			} else if (r < 0) r = errno;
+#endif
 			close(fd);
 		} else r = errno;
 
@@ -1094,6 +1107,7 @@ static void idhash_reset(struct apk_id_hash *idh)
 	idhash_init(idh);
 }
 
+#ifndef __APPLE__
 static void idcache_add(struct apk_id_hash *hash, apk_blob_t name, unsigned long id)
 {
 	struct cache_item *ci;
@@ -1110,6 +1124,7 @@ static void idcache_add(struct apk_id_hash *hash, apk_blob_t name, unsigned long
 	hlist_add_head(&ci->by_id, &hash->by_id[id % ARRAY_SIZE(hash->by_id)]);
 	hlist_add_head(&ci->by_name, &hash->by_name[h % ARRAY_SIZE(hash->by_name)]);
 }
+#endif
 
 static struct cache_item *idcache_by_name(struct apk_id_hash *hash, apk_blob_t name)
 {
@@ -1152,6 +1167,7 @@ void apk_id_cache_free(struct apk_id_cache *idc)
 	idc->root_fd = 0;
 }
 
+#ifndef __APPLE__
 static FILE *fopenat(int dirfd, const char *pathname)
 {
 	FILE *f;
@@ -1164,9 +1180,11 @@ static FILE *fopenat(int dirfd, const char *pathname)
 	if (!f) close(fd);
 	return f;
 }
+#endif
 
 static void idcache_load_users(int root_fd, struct apk_id_hash *idh)
 {
+#ifndef __APPLE__
 #ifdef HAVE_FGETPWENT_R
 	char buf[1024];
 	struct passwd pwent;
@@ -1193,10 +1211,12 @@ static void idcache_load_users(int root_fd, struct apk_id_hash *idh)
 #ifndef HAVE_FGETPWENT_R
 	endpwent();
 #endif
+#endif
 }
 
 static void idcache_load_groups(int root_fd, struct apk_id_hash *idh)
 {
+#ifndef __APPLE__
 #ifdef HAVE_FGETGRENT_R
 	char buf[1024];
 	struct group grent;
@@ -1222,6 +1242,7 @@ static void idcache_load_groups(int root_fd, struct apk_id_hash *idh)
 	fclose(in);
 #ifndef HAVE_FGETGRENT_R
 	endgrent();
+#endif
 #endif
 }
 

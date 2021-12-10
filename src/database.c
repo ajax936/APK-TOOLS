@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <mntent.h>
 #include <libgen.h>
 #include <limits.h>
 #include <unistd.h>
@@ -18,13 +17,17 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <fnmatch.h>
-#include <sys/vfs.h>
 #include <sys/file.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <sys/mount.h>
-#include <sys/statvfs.h>
-#include <linux/magic.h>
+
+#ifdef __linux__
+# include <mntent.h>
+# include <sys/vfs.h>
+# include <sys/mount.h>
+# include <sys/statvfs.h>
+# include <linux/magic.h>
+#endif
 
 #include "apk_defines.h"
 #include "apk_package.h"
@@ -1335,6 +1338,7 @@ static void handle_alarm(int sig)
 {
 }
 
+#ifdef __linux__
 static char *find_mountpoint(int atfd, const char *rel_path)
 {
 	struct mntent *me;
@@ -1363,6 +1367,7 @@ static char *find_mountpoint(int atfd, const char *rel_path)
 
 	return ret;
 }
+#endif
 
 static void mark_in_cache(struct apk_database *db, int dirfd, const char *name, struct apk_package *pkg)
 {
@@ -1460,6 +1465,7 @@ static int apk_db_name_rdepends(apk_hash_item item, void *pctx)
 }
 
 
+#ifdef __linux__
 static unsigned long map_statfs_flags(unsigned long f_flag)
 {
 	unsigned long mnt_flags = 0;
@@ -1476,6 +1482,7 @@ static unsigned long map_statfs_flags(unsigned long f_flag)
 	if (f_flag & ST_MANDLOCK) mnt_flags |= ST_MANDLOCK;
 	return mnt_flags;
 }
+#endif
 
 void apk_db_init(struct apk_database *db)
 {
@@ -1497,7 +1504,9 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 {
 	struct apk_out *out = &ac->out;
 	const char *msg = NULL;
+#ifdef __linux__
 	struct statfs stfs;
+#endif
 	apk_blob_t blob;
 	int r, fd;
 
@@ -1518,9 +1527,11 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 	apk_db_setup_repositories(db, ac->cache_dir);
 	db->root_fd = apk_ctx_fd_root(ac);
 
+#ifdef __linux__
 	if (fstatfs(db->root_fd, &stfs) == 0 &&
 	    stfs.f_type == TMPFS_MAGIC)
 		db->permanent = 0;
+#endif
 
 	if (ac->root && ac->arch) {
 		db->arch = apk_atomize(&db->atoms, APK_BLOB_STR(ac->arch));
@@ -1554,7 +1565,9 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 			apk_msg(out, "Waiting for repository lock");
 			memset(&sa, 0, sizeof sa);
 			sa.sa_handler = handle_alarm;
+#ifdef SA_ONESHOT
 			sa.sa_flags   = SA_ONESHOT;
+#endif
 			sigaction(SIGALRM, &sa, &old_sa);
 
 			alarm(ac->lock_wait);
@@ -1565,6 +1578,7 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 			sigaction(SIGALRM, &old_sa, NULL);
 		}
 
+#ifdef __linux__
 		/* mount /proc */
 		if (asprintf(&db->root_proc_dir, "%s/proc", db->ctx->root) == -1)
 			goto ret_errno;
@@ -1579,6 +1593,7 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 			free(db->root_proc_dir);
 			db->root_proc_dir = NULL;
 		}
+#endif
 	}
 
 	blob = APK_BLOB_STR("+etc\n" "@etc/init.d\n" "!etc/apk\n");
@@ -1589,6 +1604,7 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 
 	/* figure out where to have the cache */
 	fd = openat(db->root_fd, ac->cache_dir, O_RDONLY | O_CLOEXEC);
+#ifdef __linux__
 	if (fd >= 0 && fstatfs(fd, &stfs) == 0) {
 		db->cache_dir = ac->cache_dir;
 		db->cache_fd = fd;
@@ -1607,7 +1623,9 @@ int apk_db_open(struct apk_database *db, struct apk_ctx *ac)
 				goto ret_r;
 			}
 		}
-	} else {
+	} else
+#endif
+	{
 		if (fd >= 0) close(fd);
 		db->cache_dir = apk_static_cache_dir;
 		db->cache_fd = openat(db->root_fd, db->cache_dir, O_RDONLY | O_CLOEXEC);
@@ -1776,6 +1794,7 @@ void apk_db_close(struct apk_database *db)
 	apk_hash_free(&db->installed.dirs);
 	apk_atom_free(&db->atoms);
 
+#ifdef __linux__
 	if (db->root_proc_dir) {
 		umount2(db->root_proc_dir, MNT_DETACH|UMOUNT_NOFOLLOW);
 		free(db->root_proc_dir);
@@ -1787,6 +1806,7 @@ void apk_db_close(struct apk_database *db)
 		free(db->cache_remount_dir);
 		db->cache_remount_dir = NULL;
 	}
+#endif
 
 	if (db->cache_fd > 0) close(db->cache_fd);
 	if (db->lock_fd > 0) close(db->lock_fd);

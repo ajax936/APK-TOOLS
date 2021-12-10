@@ -97,7 +97,9 @@ static int fsys_file_extract(struct apk_ctx *ac, const struct apk_file_info *fi,
 {
 	char tmpname_file[TMPNAME_MAX], tmpname_linktarget[TMPNAME_MAX];
 	struct apk_out *out = &ac->out;
+#ifdef __linux__
 	struct apk_xattr *xattr;
+#endif
 	int fd, r = -1, atflags = 0, ret = 0;
 	int atfd = apk_ctx_fd_dest(ac);
 	const char *fn = fi->name, *link_target = fi->link_target;
@@ -152,8 +154,12 @@ static int fsys_file_extract(struct apk_ctx *ac, const struct apk_file_info *fi,
 	case S_IFBLK:
 	case S_IFCHR:
 	case S_IFIFO:
+#ifdef __linux__
 		r = mknodat(atfd, fn, fi->mode, fi->device);
 		if (r < 0) ret = -errno;
+#else
+		ret = -ENOTSUP;
+#endif
 		break;
 	}
 	if (ret) {
@@ -185,12 +191,14 @@ static int fsys_file_extract(struct apk_ctx *ac, const struct apk_file_info *fi,
 		r = 0;
 		fd = openat(atfd, fn, O_RDWR);
 		if (fd >= 0) {
+#ifdef __linux__
 			foreach_array_item(xattr, fi->xattrs) {
 				if (fsetxattr(fd, xattr->name, xattr->value.ptr, xattr->value.len, 0) < 0) {
 					r = -errno;
 					if (r != -ENOTSUP) break;
 				}
 			}
+#endif
 			close(fd);
 		} else {
 			r = -errno;

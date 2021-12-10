@@ -8,8 +8,11 @@
  */
 
 #include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <limits.h>
+
+#ifdef __linux__
+# include <sys/sysmacros.h>
+#endif
 
 #include "apk_defines.h"
 #include "apk_tar.h"
@@ -150,8 +153,10 @@ int apk_tar_parse(struct apk_istream *is, apk_archive_entry_parser parser,
 			.name  = entry.name,
 			.uname = buf.uname,
 			.gname = buf.gname,
+#ifdef __linux__
 			.device = makedev(GET_OCTAL(buf.devmajor, &r),
 					  GET_OCTAL(buf.devminor, &r)),
+#endif
 			.xattrs = entry.xattrs,
 		};
 		if (r != 0) goto err;
