@@ -34,7 +34,7 @@
 #define NULL 0L
 #endif
 
-#if __DARWIN_ONLY_64_BIT_INO_T
+#ifdef __APPLE__
 # define stat64 stat
 # define fstatat64 fstatat
 #endif
