@@ -1098,7 +1098,6 @@ static void idhash_reset(struct apk_id_hash *idh)
 	idhash_init(idh);
 }
 
-#ifndef __APPLE__
 static void idcache_add(struct apk_id_hash *hash, apk_blob_t name, unsigned long id)
 {
 	struct cache_item *ci;
@@ -1115,7 +1114,6 @@ static void idcache_add(struct apk_id_hash *hash, apk_blob_t name, unsigned long
 	hlist_add_head(&ci->by_id, &hash->by_id[id % ARRAY_SIZE(hash->by_id)]);
 	hlist_add_head(&ci->by_name, &hash->by_name[h % ARRAY_SIZE(hash->by_name)]);
 }
-#endif
 
 static struct cache_item *idcache_by_name(struct apk_id_hash *hash, apk_blob_t name)
 {
@@ -1158,7 +1156,6 @@ void apk_id_cache_free(struct apk_id_cache *idc)
 	idc->root_fd = 0;
 }
 
-#ifndef __APPLE__
 static FILE *fopenat(int dirfd, const char *pathname)
 {
 	FILE *f;
@@ -1171,11 +1168,9 @@ static FILE *fopenat(int dirfd, const char *pathname)
 	if (!f) close(fd);
 	return f;
 }
-#endif
 
 static void idcache_load_users(int root_fd, struct apk_id_hash *idh)
 {
-#ifndef __APPLE__
 #ifdef HAVE_FGETPWENT_R
 	char buf[1024];
 	struct passwd pwent;
@@ -1192,8 +1187,11 @@ static void idcache_load_users(int root_fd, struct apk_id_hash *idh)
 	do {
 #ifdef HAVE_FGETPWENT_R
 		fgetpwent_r(in, &pwent, buf, sizeof(buf), &pwd);
-#else
+#elif !defined(__APPLE__)
 		pwd = fgetpwent(in);
+#else
+# warning macOS does not support nested /etc/passwd databases, using system one.
+		pwd = getpwent();
 #endif
 		if (!pwd) break;
 		idcache_add(idh, APK_BLOB_STR(pwd->pw_name), pwd->pw_uid);
@@ -1202,12 +1200,10 @@ static void idcache_load_users(int root_fd, struct apk_id_hash *idh)
 #ifndef HAVE_FGETPWENT_R
 	endpwent();
 #endif
-#endif
 }
 
 static void idcache_load_groups(int root_fd, struct apk_id_hash *idh)
 {
-#ifndef __APPLE__
 #ifdef HAVE_FGETGRENT_R
 	char buf[1024];
 	struct group grent;
@@ -1224,8 +1220,11 @@ static void idcache_load_groups(int root_fd, struct apk_id_hash *idh)
 	do {
 #ifdef HAVE_FGETGRENT_R
 		fgetgrent_r(in, &grent, buf, sizeof(buf), &grp);
-#else
+#elif !defined(__APPLE__)
 		grp = fgetgrent(in);
+#else
+# warning macOS does not support nested /etc/group databases, using system one.
+		grp = getgrent();
 #endif
 		if (!grp) break;
 		idcache_add(idh, APK_BLOB_STR(grp->gr_name), grp->gr_gid);
@@ -1233,7 +1232,6 @@ static void idcache_load_groups(int root_fd, struct apk_id_hash *idh)
 	fclose(in);
 #ifndef HAVE_FGETGRENT_R
 	endgrent();
-#endif
 #endif
 }
 
