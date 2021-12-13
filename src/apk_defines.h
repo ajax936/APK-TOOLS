@@ -34,6 +34,11 @@
 #define NULL 0L
 #endif
 
+#if __DARWIN_ONLY_64_BIT_INO_T
+# define stat64 stat
+# define fstatat64 fstatat
+#endif
+
 enum {
 	APKE_EOF = 1024,
 	APKE_DNS,
