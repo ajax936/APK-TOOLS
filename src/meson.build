@@ -160,7 +160,12 @@ if(lua_dep.found())
 	libluaapk = library(
 		'luaapk',
 		luaapk_src,
-		dependencies: [lua_dep, libapk_dep, shared_deps],
+		dependencies: [
+			lua_dep,
+			libapk_dep,
+			shared_deps,
+			libportability_dep.partial_dependency(includes: true),
+		],
 		install: true,
 		install_dir: lua_dep.get_pkgconfig_variable('libdir'),
 		c_args: apk_cargs,
@@ -175,6 +180,7 @@ apk_exe = executable(
 		libapk_dep,
 		shared_deps,
 		libfetch_dep.partial_dependency(includes: true),
+		libportability_dep.partial_dependency(includes: true),
 	],
 	c_args: apk_cargs,
 )

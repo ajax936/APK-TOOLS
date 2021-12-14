@@ -1,6 +1,11 @@
 cc = meson.get_compiler('c')
 
 
+if host_machine.endian() == 'big'
+	add_project_arguments('-DWORDS_BIGENDIAN', language: 'c')
+endif
+
+
 libportability_src = []
 
 
