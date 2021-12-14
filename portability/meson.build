@@ -11,6 +11,7 @@ libportability_src = []
 
 check_functions = [
 	['memrchr', 'memrchr.c', 'NEED_MEMRCHR', 'string.h'],
+	['strlcpy', 'strlcpy.c', 'NEED_STRLCPY', 'string.h'],
 ]
 
 
