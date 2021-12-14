@@ -14,6 +14,7 @@
 
 #include "apk_blob.h"
 #include "apk_hash.h"
+#include "apk_string.h"
 
 char *apk_blob_cstr(apk_blob_t blob)
 {
@@ -152,16 +153,6 @@ int apk_blob_cspn(apk_blob_t blob, const apk_spn_match reject, apk_blob_t *l, ap
 			return 1;
 		}
 	}
-	return 0;
-}
-#endif
-
-#if defined(__APPLE__)
-void *memrchr(const void *m, int c, size_t n)
-{
-	const unsigned char *s = m;
-	c = (unsigned char)c;
-	while (n--) if (s[n]==c) return (void *)(s+n);
 	return 0;
 }
 #endif

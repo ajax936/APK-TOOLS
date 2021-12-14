@@ -30,6 +30,7 @@ add_project_arguments('-D_GNU_SOURCE', language: 'c')
 subproject = meson.is_subproject()
 
 subdir('doc')
+subdir('portability')
 subdir('libfetch')
 subdir('src')
 subdir('tests')

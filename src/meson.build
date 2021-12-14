@@ -117,6 +117,7 @@ libapk_shared = shared_library(
 	install: not subproject,
 	dependencies: [
 		libfetch_dep,
+		libportability_dep,
 		shared_deps,
 	],
 	c_args: apk_cargs,
@@ -128,6 +129,7 @@ libapk_static = static_library(
 	install: not subproject,
 	dependencies: [
 		libfetch_dep,
+		libportability_dep,
 		static_deps,
 	],
 	c_args: [apk_cargs, '-DOPENSSL_NO_ENGINE'],
