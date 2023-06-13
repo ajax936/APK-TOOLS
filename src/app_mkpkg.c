@@ -38,10 +38,12 @@ struct mkpkg_ctx {
 	struct apk_string_array *triggers;
 	uint64_t installed_size;
 	struct apk_pathbuilder pb;
+	adb_comp_t comp;
 	unsigned has_scripts : 1;
 };
 
 #define MKPKG_OPTIONS(OPT) \
+	OPT(OPT_MKPKG_compression,	APK_OPT_ARG APK_OPT_SH("c") "compression") \
 	OPT(OPT_MKPKG_files,	APK_OPT_ARG APK_OPT_SH("f") "files") \
 	OPT(OPT_MKPKG_info,	APK_OPT_ARG APK_OPT_SH("I") "info") \
 	OPT(OPT_MKPKG_output,	APK_OPT_ARG APK_OPT_SH("o") "output") \
@@ -92,6 +94,20 @@ static int option_parse_applet(void *ctx, struct apk_ctx *ac, int optch, const c
 	int i, ret;
 
 	switch (optch) {
+	case OPT_MKPKG_compression:
+		if (!strcmp(optarg, "zstd")) {
+			ictx->comp = ADB_COMP_ZSTD;
+		} else if (!strcmp(optarg, "zstd_fast")) {
+			ictx->comp = ADB_COMP_ZSTD_FAST;
+		} else if (!strcmp(optarg, "zstd_slow")) {
+			ictx->comp = ADB_COMP_ZSTD_SLOW;
+		} else if (!strcmp(optarg, "deflate")) {
+			ictx->comp = ADB_COMP_DEFLATE;
+		} else {
+			apk_err(out, "invalid compression type: %s", optarg);
+			return -EINVAL;
+		}
+		break;
 	case OPT_MKPKG_info:
 		return parse_info(ictx, out, optarg);
 	case OPT_MKPKG_files:
@@ -404,7 +420,7 @@ static int mkpkg_main(void *pctx, struct apk_ctx *ac, struct apk_string_array *a
 
 	// construct package with ADB as header, and the file data in
 	// concatenated data blocks
-	os = adb_compress(apk_ostream_to_file(AT_FDCWD, ctx->output, 0644), ADB_COMP_DEFLATE);
+	os = adb_compress(apk_ostream_to_file(AT_FDCWD, ctx->output, 0644), ctx->comp ?: ADB_COMP_DEFLATE);
 	if (IS_ERR(os)) {
 		r = PTR_ERR(os);
 		goto err;

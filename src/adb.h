@@ -334,6 +334,9 @@ typedef unsigned int adb_comp_t;
 
 #define ADB_COMP_NONE		0
 #define ADB_COMP_DEFLATE	1
+#define ADB_COMP_ZSTD		2
+#define ADB_COMP_ZSTD_FAST	3
+#define ADB_COMP_ZSTD_SLOW	4
 
 struct apk_istream *adb_decompress(struct apk_istream *is, adb_comp_t *compression);
 struct apk_ostream *adb_compress(struct apk_ostream *os, adb_comp_t compression);

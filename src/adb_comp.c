@@ -27,6 +27,21 @@ struct apk_istream *adb_decompress(struct apk_istream *is, adb_comp_t *compressi
 		apk_istream_get(is, 4);
 		is = apk_istream_deflate(is);
 		break;
+	case 'z':
+		c = ADB_COMP_ZSTD;
+		apk_istream_get(is, 4);
+		is = apk_istream_zstd(is);
+		break;
+	case 'Z':
+		c = ADB_COMP_ZSTD_FAST;
+		apk_istream_get(is, 4);
+		is = apk_istream_zstd(is);
+		break;
+	case 's':
+		c = ADB_COMP_ZSTD_SLOW;
+		apk_istream_get(is, 4);
+		is = apk_istream_zstd(is);
+		break;
 	}
 	if (c == -1) return ERR_PTR(apk_istream_close_error(is, -APKE_ADB_COMPRESSION));
 	if (compression) *compression = c;
@@ -42,6 +57,15 @@ struct apk_ostream *adb_compress(struct apk_ostream *os, adb_comp_t compression)
 	case ADB_COMP_DEFLATE:
 		if (apk_ostream_write(os, "ADBd", 4) < 0) goto err;
 		return apk_ostream_deflate(os);
+	case ADB_COMP_ZSTD:
+		if (apk_ostream_write(os, "ADBz", 4) < 0) goto err;
+		return apk_ostream_zstd(os, 1);
+	case ADB_COMP_ZSTD_FAST:
+		if (apk_ostream_write(os, "ADBZ", 4) < 0) goto err;
+		return apk_ostream_zstd(os, 0);
+	case ADB_COMP_ZSTD_SLOW:
+		if (apk_ostream_write(os, "ADBs", 4) < 0) goto err;
+		return apk_ostream_zstd(os, 2);
 	}
 err:
 	apk_ostream_cancel(os, -APKE_ADB_COMPRESSION);
