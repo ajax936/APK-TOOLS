@@ -330,15 +330,21 @@ int adb_walk_text(struct adb_walk *d, struct apk_istream *is);
 
 // Seamless compression support
 
-typedef unsigned int adb_comp_t;
+struct adb_compression_spec {
+	uint8_t alg;
+	uint8_t level;
+};
 
-#define ADB_COMP_NONE		0
-#define ADB_COMP_DEFLATE	1
-#define ADB_COMP_ZSTD		2
-#define ADB_COMP_ZSTD_FAST	3
-#define ADB_COMP_ZSTD_SLOW	4
+// Internally, "none" compression is treated specially:
+// none/0 means "default compression"
+// none/1 is "no compression"
 
-struct apk_istream *adb_decompress(struct apk_istream *is, adb_comp_t *compression);
-struct apk_ostream *adb_compress(struct apk_ostream *os, adb_comp_t compression);
+#define ADB_COMP_NONE		0x00
+#define ADB_COMP_DEFLATE	0x01
+#define ADB_COMP_ZSTD		0x02
+
+int adb_parse_compression(const char *spec_string, struct adb_compression_spec *spec);
+struct apk_istream *adb_decompress(struct apk_istream *is, struct adb_compression_spec *spec);
+struct apk_ostream *adb_compress(struct apk_ostream *os, struct adb_compression_spec *spec);
 
 #endif

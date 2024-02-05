@@ -183,11 +183,11 @@ static const struct apk_ostream_ops zstd_ostream_ops = {
 	.close = zo_close,
 };
 
-struct apk_ostream *apk_ostream_zstd(struct apk_ostream *output, int comp)
+struct apk_ostream *apk_ostream_zstd(struct apk_ostream *output, uint8_t level)
 {
 	struct apk_zstd_ostream *os;
 	size_t errc, buf_outsize;
-	int threads, level;
+	int threads;
 	ZSTD_bounds bounds;
 
 	if (IS_ERR(output)) return ERR_CAST(output);
@@ -203,21 +203,6 @@ struct apk_ostream *apk_ostream_zstd(struct apk_ostream *output, int comp)
 	if ((os->ctx = ZSTD_createCCtx()) == NULL) {
 		free(os);
 		goto err;
-	}
-
-	switch (comp) {
-	case 0:
-		/* still good and very fast */
-		level = 3;
-		break;
-	case 2:
-		/* 19 is significantly slower with no gain */
-		level = 18;
-		break;
-	default:
-		/* default level, best performance-compression ratio */
-		level = 9;
-		break;
 	}
 
 	threads = apk_get_nproc();
